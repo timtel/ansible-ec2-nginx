@@ -1,0 +1,49 @@
+---
+########## Create *.conf files for every public-ec2 
+- name: Get info Instances
+  ec2_instance_info:
+    filters:
+      "tag:project": "{{ instance_name }}"
+      instance-state-name: "running"
+  register: ec2_info
+
+- name: Delete files in files/
+  shell: /bin/rm -rf ./files/*
+    
+- name: Create empty *.conf files for all subnets
+  copy:
+    src: templates/default.conf
+    dest: "files/{{ item.subnet_id }}"
+    follow: no
+  with_items: "{{ec2_info.instances}}"
+
+- name: Fill *.conf files with IP of app-*
+  local_action: lineinfile 
+                    path="files/{{ item.subnet_id }}"
+                    insertafter="upstream myapp1 {" line="  server {{ item.private_ip_address }}:80;"
+  with_items: "{{ec2_info.instances}}"   
+  when:  item.public_ip_address is not defined
+
+- name: Copy correct <subnet...>.conf files to IP.conf files
+  copy:
+    src: "files/{{ item.subnet_id }}"
+    dest: "files/{{ item.public_ip_address }}"
+    follow: no
+  with_items: "{{ec2_info.instances}}"
+  when:  item.public_ip_address is defined
+
+####### Change inventory file inventory/public
+- name: Create empty inventory file inventory/public
+  copy:
+    content: "[web_servers]\n"
+    dest: inventory/public
+    follow: no
+
+- name: Add the newly created EC2 instance(s) to the local host group
+  local_action: lineinfile 
+                    path="inventory/public"
+                    regexp={{  item.public_ip_address }} 
+                    insertafter="[web_servers]" line="{{ item.public_ip_address }}"
+  with_items: "{{ec2_info.instances}}"   
+  when:  item.public_ip_address is defined
+

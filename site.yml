@@ -1,0 +1,10 @@
+---
+# Create set of servers on an EC2 instances
+- name: Create and config set of servers on an EC2 instances
+  hosts: local
+  gather_facts: False
+  roles:
+    - role: create-ec2-instances
+    
+- import_playbook: configure-frontend-ec2.yml
+  when: (not_configure_front is not defined) or (not_configure_front != True)

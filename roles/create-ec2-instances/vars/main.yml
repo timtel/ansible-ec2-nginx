@@ -1,0 +1,8 @@
+---
+# vars file for create-ec2-instances
+key_name: 'tt-test-l'
+ami_id: 'ami-0010d386b82bc06f0'   # Ubuntu 18.04
+instance_type: 't2.micro'
+instance_name: 'test-alar'
+sg_name: 'ssh-http-https-icmp-sg'
+is_delete_old: true

@@ -1,0 +1,31 @@
+---
+# Configure 
+- name: Configure frontend as a LB
+  hosts: web_servers
+  # become: True
+  gather_facts: True
+  tasks:
+    - name: Install, configure, and restart nginx
+      block:
+        
+        - name: Get my public IP
+          ipify_facts:
+          register: my_host_ip
+
+        - name: copy the  nginx config template
+          template:
+            src: "templates/nginx.conf.templ"
+            dest: /etc/nginx/nginx.conf
+        
+        - name: copy the  balancer config template
+          template:
+            src: "./files/{{ my_host_ip.ansible_facts.ipify_public_ip }}"
+            dest: /etc/nginx/conf.d/default.conf
+
+        - name: Restart service and enable it
+          service:
+            name: nginx
+            state: restarted
+            enabled: True
+      become: true
+      ignore_errors: yes

@@ -1,0 +1,22 @@
+# instances.yml
+instances:
+  - name: app
+    subnets:
+      - subnet: 'subnet-a09c4bcb'
+        seq_num: '01'
+      - subnet: 'subnet-02b6c34e'
+        seq_num: '02'
+      - subnet: 'subnet-a09c4bcb'
+        seq_num: '03'
+      - subnet: 'subnet-02b6c34e'
+        seq_num: '04'
+      - subnet: 'subnet-02b6c34e'
+        seq_num: '05'
+  - name: web
+    subnets:
+      - subnet: 'subnet-02b6c34e'
+        seq_num: '01'
+        assign_public_ip: true
+      - subnet: 'subnet-a09c4bcb'
+        seq_num: '02'
+        assign_public_ip: true

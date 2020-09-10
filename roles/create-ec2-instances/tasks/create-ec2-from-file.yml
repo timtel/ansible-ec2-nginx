@@ -1,0 +1,92 @@
+---
+- name: Include vars of instances.yml into the 'instan' variable.
+  include_vars:
+    file: config/instances.yml
+    name: instan
+
+############ Create ONLY instances with public IP from instances.yml, update  and install nginx 
+- name: launching AWS instance with public IP
+  ec2:
+    key_name: "{{ key_name }}"
+    instance_type: "{{ instance_type }}"
+    image: "{{ ami_id }}"
+    wait: yes
+    group: "{{ sg_name }}"
+    vpc_subnet_id: "{{item.1.subnet}}"
+    user_data: |
+                #!/bin/sh
+                apt-get update
+                apt-get install nginx -y
+                echo "test" > /var/www/html/index.html
+                echo "{{item.0.name}}-{{item.1.seq_num}}" >> /var/www/html/index.html
+                service nginx start
+    instance_tags:
+      Name: "{{item.0.name}}-{{item.1.seq_num}}"
+      project: "{{ instance_name }}"
+    count_tag:
+      Name: "{{item.0.name}}-{{item.1.seq_num}}"
+    exact_count: 1
+    assign_public_ip: "{{item.1.assign_public_ip|default(False)}}"
+    # assign_public_ip: yes
+  with_subelements: 
+    - "{{instan.instances}}"
+    - subnets  
+  when: (item.1.assign_public_ip is defined) and (item.1.assign_public_ip == true)
+
+###### Find old or Create new AMI from last instance (with installed nginx) 
+- name: Get info Instances
+  ec2_instance_info:
+    filters:
+      "tag:project": "{{ instance_name }}"
+      instance-state-name: "running"
+  register: ec2_info_public
+ 
+- name: Find my ami with installed nginx
+  ec2_ami_info:
+    owners: self
+    filters:
+      "tag:project": "{{ instance_name }}"
+  when:  (is_delete_old is defined) and (is_delete_old == true)
+  register: ami_find  
+
+- pause:
+    seconds: 99
+
+- name: Create new my ami with installed nginx
+  ec2_ami:
+    instance_id: "{{ec2_info_public.instances[0].instance_id}}"
+    wait: yes
+    name: "{{ instance_name }}-ami"
+    tags:
+      project: "{{ instance_name }}"
+  when:  ami_find.images[0].image_id is not defined
+  register: ami_created
+
+###### Create ec2 with private IP from my new AMI with installed nginx
+- name: launching AWS instance with only private IP 
+  ec2:
+    key_name: "{{ key_name }}"
+    instance_type: "{{ instance_type }}"
+    image: "{{ami_find.images[0].image_id|default(ami_created.image_id)}}"
+    wait: yes
+    group: "{{ sg_name }}"
+    vpc_subnet_id: "{{item.1.subnet}}"
+    user_data: |
+                #!/bin/sh
+                cp /etc/nginx/sites-enabled/* /etc/nginx/conf.d/
+                echo "test privat" > index.html
+                echo "{{item.0.name}}-{{item.1.seq_num}}" >> index.html
+                cp index.html /var/www/html/index.html
+                service nginx restart
+    instance_tags:
+      Name: "{{item.0.name}}-{{item.1.seq_num}}"
+      project: "{{ instance_name }}"
+    count_tag:
+      Name: "{{item.0.name}}-{{item.1.seq_num}}"
+    exact_count: 1
+    assign_public_ip: "{{item.1.assign_public_ip|default(False)}}"
+    # assign_public_ip: no
+  with_subelements: 
+    - "{{instan.instances}}"
+    - subnets  
+  when: (item.1.assign_public_ip is not defined) or (item.1.assign_public_ip == false)

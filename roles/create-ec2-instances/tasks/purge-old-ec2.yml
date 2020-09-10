@@ -1,0 +1,27 @@
+---
+############ Kill old instances if is_delete_old -> true
+- name: Get info Instances old
+  ec2_instance_info:
+    filters:
+      "tag:project": "{{ instance_name }}"
+      instance-state-name: "running"
+  register: ec2_info_old
+
+- name: terminate old instances
+  ec2:
+    instance_ids: "{{item.instance_id}}"
+    state: absent
+    wait: yes
+  with_items: "{{ec2_info_old.instances}}"
+  when: (is_delete_old is defined) and (is_delete_old == true) 
+
+- name: Create empty inventory file inventory/public
+  copy:
+    content: "[web_servers]\n"
+    dest: inventory/public
+    follow: no
+  when: (is_delete_old is defined) and (is_delete_old == true) 
+
+- name: Delete files in folder files
+  shell: /bin/rm -rf ./files/*
+  when: (is_delete_old is defined) and (is_delete_old == true) 

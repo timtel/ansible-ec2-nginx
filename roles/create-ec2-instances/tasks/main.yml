@@ -1,0 +1,10 @@
+---
+# tasks file for create-ec2-instances
+- name: Create servers
+  block:
+    - import_tasks: purge-old-ec2.yml
+    - import_tasks: create-ec2-from-file.yml
+    - import_tasks: update-configs-and-inventory.yml
+    - meta: refresh_inventory 
+    - pause:
+        seconds: 30
