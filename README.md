@@ -1,7 +1,7 @@
 # ansible-ec2-nginx
 
 
-Simple Ansible task
+Simple Ansible task, description:
 ```
 Цель задачи показать, как работается с инструментами.
 А именно, как понимаются особенности создания инстансов, и доступа к ним.
@@ -59,8 +59,24 @@ instances:
         }
 - при добавлении/удалении app-ов в instances.yml и запуске плейбука, новые инстансы должны быть созданы, и конфиги "web"-ов обновлены.
 ```
+Requirements
+------------
 
-## Run
+The below requirements are needed on the host that executes this module.
+
+- ansible 2.9.12
+- python >= 2.6
+- boto
+- boto3
+- botocor
+
+On AWS :
+
+- AWS-account (access key , secret key with needed access rights)
+- Security Group (with opened 80 port at least) 
+- private key (*.pem file)
+
+## Run playbook
 
 Change variables in roles/create-ec2-instances/vars/main.yml and use your own AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and file *.pem 
 
@@ -69,9 +85,19 @@ export AWS_ACCESS_KEY_ID=AK..............W
 export AWS_SECRET_ACCESS_KEY=Ix5.........................................7 
 export AWS_REGION=us-east-2
 export ANSIBLE_HOST_KEY_CHECKING=False
+```
+
+Simple run playbook:
+
+```bash
 ansible-playbook   -u ubuntu -i inventory  --private-key=../your-own-key-file.pem site.yml
 ```
 
 ## Get pages by web-browser  (or by curl)
 
 Enter in address field of browser public IP of web-instanse, reload page and check changing a name of app-instance on the screen
+
+## Change your server list
+
+List of ec2-instances, subnets are in config file: config/instances.yml
+
